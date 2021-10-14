@@ -1,0 +1,21 @@
+{
+  "name": "tg-bot-tmdb",
+  "version": "1.0.0",
+  "description": "TMDB movie bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "movie-trailer": "^2.0.6",
+    "node-fetch": "^2.6.1",
+    "telegraf": "^3.38.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.6"
+  }
+}
