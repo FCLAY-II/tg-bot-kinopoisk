@@ -17,8 +17,6 @@ bot.start((ctx) => {
     Markup.keyboard([['Поиск фильма'], ['Поиск сериала/программы'], ['Помощь']])
     .resize()
     .extra()
-    // Markup.inlineKeyboard([['Поиск фильма'], ['Поиск сериала/программы'], ['Помощь']]).resize()
-    // .extra()
     );
   console.log(
     `-------------->>>> User id: ${ctx.message.from.id}; Username: ${ctx.message.from.username}; User first name: ${ctx.message.from.first_name}; User last name: ${ctx.message.from.last_name}`
