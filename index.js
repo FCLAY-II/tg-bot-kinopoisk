@@ -10,7 +10,7 @@ bot.start((ctx) => {
   ctx.replyWithAnimation(
     'https://tlgrm.ru/_/stickers/d06/e20/d06e2057-5c13-324d-b94f-9b5a0e64f2da/11.webp'
   );
-  if (last_name) {
+  if (ctx.message.last_name) {
     ctx.reply(
       `👋 Привет, ${ctx.message.from.first_name} ${ctx.message.from.last_name}!\n\n🤖 Нажимай на кнопку (если они скрыты можно открыть возле поля ввода или используй /help) и я помогу тебе сгенерировать рандомный фильм/сериал/тв программу!\n\n💬  /help - команда поможет тебе разобраться как работать с ботом)`,
       Markup.keyboard([
@@ -79,7 +79,7 @@ bot.on('text', async (ctx) => {
     ctx.replyWithAnimation(
       'https://tlgrm.ru/_/stickers/d06/e20/d06e2057-5c13-324d-b94f-9b5a0e64f2da/11.webp'
     );
-    if (ctx.message.from.last_name) {
+    if (ctx.message.from?.last_name) {
       const message = `👋 Привет, ${ctx.message.from.first_name} ${ctx.message.from.last_name}! Чтобы начать поиск фильма напиши "поиск фильма" или нажимай на определенную кнопку.`;
       ctx.reply(message);
     } else {
@@ -88,8 +88,8 @@ bot.on('text', async (ctx) => {
     }
   }
   if (textCapitalize === 'Hi') {
-    if (ctx.message.from.last_name) {
-      const message = `👋 Hi, ${ctx.message.from.first_name} ${ctx.message.from.last_name}! Чтобы начать поиск фильма напиши "поиск фильма" или нажимай на определенную кнопку.`;
+    if (ctx.message.from?.last_name) {
+      const message = `👋 Hi, ${ctx.message.from.first_name} ${ctx.message.from?.last_name}! Чтобы начать поиск фильма напиши "поиск фильма" или нажимай на определенную кнопку.`;
       ctx.reply(message);
     } else {
       const message = `👋 Hi, ${ctx.message.from.first_name}! Чтобы начать поиск фильма напиши "поиск фильма" или нажимай на определенную кнопку.`;
