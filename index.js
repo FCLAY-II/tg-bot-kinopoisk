@@ -6,17 +6,33 @@ const tmdb = require('./api/Tmdb');
 const movieTrailer = require('./api/MovieTrailer');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
-
 bot.start((ctx) => {
   ctx.replyWithAnimation(
     'https://tlgrm.ru/_/stickers/d06/e20/d06e2057-5c13-324d-b94f-9b5a0e64f2da/11.webp'
   );
-  ctx.reply(
-    `👋 Привет, ${ctx.message.from.first_name} ${ctx.message.from.last_name}!\n\n🤖 Нажимай на кнопку (если они скрыты можно открыть возле поля ввода или используй /help) и я помогу тебе сгенерировать рандомный фильм/сериал/тв программу!\n\n💬  /help - команда поможет тебе разобраться как работать с ботом)`,
-    Markup.keyboard([['Поиск фильма'], ['Поиск сериала/программы'], ['Помощь']])
-      .resize()
-      .extra()
-  );
+  if (last_name) {
+    ctx.reply(
+      `👋 Привет, ${ctx.message.from.first_name} ${ctx.message.from.last_name}!\n\n🤖 Нажимай на кнопку (если они скрыты можно открыть возле поля ввода или используй /help) и я помогу тебе сгенерировать рандомный фильм/сериал/тв программу!\n\n💬  /help - команда поможет тебе разобраться как работать с ботом)`,
+      Markup.keyboard([
+        ['Поиск фильма'],
+        ['Поиск сериала/программы'],
+        ['Помощь'],
+      ])
+        .resize()
+        .extra()
+    );
+  } else {
+    ctx.reply(
+      `👋 Привет, ${ctx.message.from.first_name}!\n\n🤖 Нажимай на кнопку (если они скрыты можно открыть возле поля ввода или используй /help) и я помогу тебе сгенерировать рандомный фильм/сериал/тв программу!\n\n💬  /help - команда поможет тебе разобраться как работать с ботом)`,
+      Markup.keyboard([
+        ['Поиск фильма'],
+        ['Поиск сериала/программы'],
+        ['Помощь'],
+      ])
+        .resize()
+        .extra()
+    );
+  }
   console.log(
     `-------------->>>> User id: ${ctx.message.from.id}; Username: ${ctx.message.from.username}; User first name: ${ctx.message.from.first_name}; User last name: ${ctx.message.from.last_name}`
   );
@@ -73,7 +89,7 @@ bot.on('text', async (ctx) => {
   }
   if (textCapitalize === 'Hi') {
     if (ctx.message.from.last_name) {
-      const message = `👋 Hi, ${ctx.message.from.first_name} ${ctx.message.from.last_name}!`;
+      const message = `👋 Hi, ${ctx.message.from.first_name} ${ctx.message.from.last_name}! Чтобы начать поиск фильма напиши "поиск фильма" или нажимай на определенную кнопку.`;
       ctx.reply(message);
     } else {
       const message = `👋 Hi, ${ctx.message.from.first_name}! Чтобы начать поиск фильма напиши "поиск фильма" или нажимай на определенную кнопку.`;
@@ -85,8 +101,7 @@ bot.on('text', async (ctx) => {
     textCapitalize !== 'Поиск сериала/программы' &&
     textCapitalize !== 'Поиск фильма' &&
     textCapitalize !== 'Привет' &&
-    textCapitalize !== 'Hi' &&
-    textCapitalize !== 'Топ фильмов'
+    textCapitalize !== 'Hi'
   ) {
     ctx.reply(`Я тебя не понимаю, попробуйте обратиться в /help .`);
   }
@@ -107,7 +122,6 @@ bot.on('text', async (ctx) => {
         genres,
         poster_path,
         vote_average,
-
       } = movie;
 
       const newGenres = genres
@@ -146,14 +160,13 @@ bot.on('text', async (ctx) => {
       if (trailer === 'Трейлер к фильму не найден!') {
         ctx.replyWithPhoto(poster);
       }
-      if (trailer){
-        const random = `🎬 Название: ${data.title}\n\n💡 Описание фильма: ${data.overview}\n\n 👀 Рейтинг: ${data.vote_average}\n\n 🎞 Оригинальное название: ${data.original_title}\n\n✅ Жанр: ${data.newGenres}\n\n🗓 Дата релиза: ${data.release}\n\n📺 Трейлер: ${data.trailer}`;
-        ctx.reply(random)
-      } else { 
-        const random = `🎬 Название: ${data.title}\n\n💡 Описание фильма: ${data.overview}\n\n 👀 Рейтинг: ${data.vote_average}\n\n 🎞 Оригинальное название: ${data.original_title}\n\n✅ Жанр: ${data.newGenres}\n\n🗓 Дата релиза: ${data.release}\n\n🖼 Постер: ${data.poster}`;
+      if (trailer) {
+        const random = `🎬 Название: ${data.title}\n\n💡 Описание фильма: ${data.overview}\n\n 👀 Рейтинг TMDB: ${data.vote_average}\n\n 🎞 Оригинальное название: ${data.original_title}\n\n✅ Жанр: ${data.newGenres}\n\n🗓 Дата релиза: ${data.release}\n\n📺 Трейлер: ${data.trailer}`;
+        ctx.reply(random);
+      } else {
+        const random = `🎬 Название: ${data.title}\n\n💡 Описание фильма: ${data.overview}\n\n 👀 Рейтинг TMDB: ${data.vote_average}\n\n 🎞 Оригинальное название: ${data.original_title}\n\n✅ Жанр: ${data.newGenres}\n\n🗓 Дата релиза: ${data.release}\n\n🖼 Постер: ${data.poster}`;
         ctx.reply(random);
       }
-
     } catch (error) {
       ctx.reply('Мы не смогли подобрать фильм! Попробуйте еще раз!');
       console.log(error);
@@ -229,11 +242,11 @@ bot.on('text', async (ctx) => {
       if (trailer === 'Трейлер к сериалу/программе не найден!') {
         ctx.replyWithPhoto(poster);
       }
-      if(trailer){
-      const random = `🎬 Название: ${data.name}\n\n💡 Описание сериала/программы: ${data.overview}\n\n👀 Рейтинг: ${data.vote_average}\n\n🎞 Оригинальное название: ${data.original_name}\n\n✅ Жанр: ${data.tvGenres}\n\n🗓 Дата релиза: ${data.airDate}\n\n🗓 Дата окончания: ${data.lastDate}\n\n📺 Трейлер: ${data.trailer}`;
-      ctx.reply(random);
+      if (trailer) {
+        const random = `🎬 Название: ${data.name}\n\n💡 Описание сериала/программы: ${data.overview}\n\n👀 Рейтинг TMDB: ${data.vote_average}\n\n🎞 Оригинальное название: ${data.original_name}\n\n✅ Жанр: ${data.tvGenres}\n\n🗓 Дата релиза: ${data.airDate}\n\n🗓 Дата окончания: ${data.lastDate}\n\n📺 Трейлер: ${data.trailer}`;
+        ctx.reply(random);
       } else {
-        const random = `🎬 Название: ${data.name}\n\n💡 Описание сериала/программы: ${data.overview}\n\n👀 Рейтинг: ${data.vote_average}\n\n🎞 Оригинальное название: ${data.original_name}\n\n✅ Жанр: ${data.tvGenres}\n\n🗓 Дата релиза: ${data.airDate}\n\n🗓 Дата окончания: ${data.lastDate}\n\n🖼 Постер: ${data.poster}`;
+        const random = `🎬 Название: ${data.name}\n\n💡 Описание сериала/программы: ${data.overview}\n\n👀 Рейтинг TMDB: ${data.vote_average}\n\n🎞 Оригинальное название: ${data.original_name}\n\n✅ Жанр: ${data.tvGenres}\n\n🗓 Дата релиза: ${data.airDate}\n\n🗓 Дата окончания: ${data.lastDate}\n\n🖼 Постер: ${data.poster}`;
         ctx.reply(random);
       }
     } catch (error) {
