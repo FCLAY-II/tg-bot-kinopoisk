@@ -33,6 +33,14 @@ const Tmdb = {
     const json = await request.json();
     return json;
   },
+
+  async getPopularMovie(token) {
+    const request = await fetch(
+      `https://api.themoviedb.org/3/movie/popular?api_key=${token}&language=ru-Ru&page=1`
+    );
+    const json = await request.json();
+    return json;
+  },
 };
 
 module.exports = Tmdb;
