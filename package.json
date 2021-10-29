@@ -10,9 +10,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.24.0",
     "dotenv": "^8.2.0",
     "movie-trailer": "^2.0.6",
     "node-fetch": "^2.6.1",
+    "node-telegram-bot-api": "^0.54.0",
+    "request": "^2.88.2",
     "telegraf": "^3.38.0"
   },
   "devDependencies": {

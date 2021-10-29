@@ -1,259 +1,337 @@
-require('dotenv').config();
+require('dotenv').config()
 
-const { Telegraf } = require('telegraf');
-const Markup = require('telegraf/markup');
-const tmdb = require('./api/Tmdb');
-const movieTrailer = require('./api/MovieTrailer');
+const TelegramBot = require('node-telegram-bot-api')
+const {
+  findGenres,
+  findLists,
+  findByGenres,
+  findRandom,
+} = require('./tgBotFunction/index')
 
-const bot = new Telegraf(process.env.BOT_TOKEN);
-bot.start((ctx) => {
-  ctx.replyWithAnimation(
-    'https://tlgrm.ru/_/stickers/d06/e20/d06e2057-5c13-324d-b94f-9b5a0e64f2da/11.webp'
-  );
-  if (ctx.message.last_name) {
-    ctx.reply(
-      `👋 Привет, ${ctx.message.from.first_name} ${ctx.message.from.last_name}!\n\n🤖 Нажимай на кнопку (если они скрыты можно открыть возле поля ввода или используй /help) и я помогу тебе сгенерировать рандомный фильм/сериал/тв программу!\n\n💬  /help - команда поможет тебе разобраться как работать с ботом)`,
-      Markup.keyboard([
-        ['Поиск фильма'],
-        ['Поиск сериала/программы'],
-        ['Помощь'],
-      ])
-        .resize()
-        .extra()
-    );
-  } else {
-    ctx.reply(
-      `👋 Привет, ${ctx.message.from.first_name}!\n\n🤖 Нажимай на кнопку (если они скрыты можно открыть возле поля ввода или используй /help) и я помогу тебе сгенерировать рандомный фильм/сериал/тв программу!\n\n💬  /help - команда поможет тебе разобраться как работать с ботом)`,
-      Markup.keyboard([
-        ['Поиск фильма'],
-        ['Поиск сериала/программы'],
-        ['Помощь'],
-      ])
-        .resize()
-        .extra()
-    );
+const token = process.env.BOT_TOKEN
+
+const bot = new TelegramBot(token, { polling: true })
+
+const keyboard = [
+  [
+    {
+      text: 'Выбрать по жанру',
+      callback_data: 'movie-genre',
+    },
+  ],
+  [
+    {
+      text: 'Выбрать по спискам',
+      callback_data: 'movie-list',
+    },
+  ],
+  [
+    {
+      text: 'Полный рандом',
+      callback_data: 'randomAll',
+    },
+  ],
+]
+const chatIdArr = []
+
+bot.onText(/\/start/, async (msg) => {
+  const chatId = msg.chat.id
+  chatIdArr.push(chatId)
+  await bot.sendMessage(msg.chat.id, 'Привет, друг!')
+  await bot.sendMessage(
+    msg.chat.id,
+    'Снова ищешь что посмотреть? Давай начнем!'
+  )
+  bot.sendMessage(chatId, 'Как будем выбирать фильм?', {
+    reply_markup: {
+      inline_keyboard: keyboard,
+    },
+  })
+})
+
+let top250PageCounter = 1
+let top250Counter = 1
+
+bot.on('callback_query', async (query) => {
+  const chatId = query.message.chat.id
+  const genresArr = await findGenres()
+  const keyboardGenres = genresArr[0].map((el, i) => {
+    return [
+      {
+        text: el,
+        callback_data: `${genresArr[1][i]}`,
+      },
+    ]
+  })
+  const keyboardLists = [
+    [
+      {
+        text: 'Top 250 Best Films',
+        callback_data: `TOP_250_BEST_FILMS`,
+      },
+    ],
+    [
+      {
+        text: 'Top 100 Popular Films',
+        callback_data: `TOP_100_POPULAR_FILMS`,
+      },
+    ],
+    [
+      {
+        text: 'Top Await Films',
+        callback_data: `TOP_AWAIT_FILMS`,
+      },
+    ],
+  ]
+  if (query.data === 'begining') {
+    bot.sendMessage(chatId, 'Как будем выбирать фильм?', {
+      reply_markup: {
+        inline_keyboard: keyboard,
+      },
+    })
   }
-  console.log(
-    `-------------->>>> User id: ${ctx.message.from.id}; Username: ${ctx.message.from.username}; User first name: ${ctx.message.from.first_name}; User last name: ${ctx.message.from.last_name}`
-  );
-});
-
-bot.help((ctx) => {
-  const message = `🤖 Я умный бот который поможет тебе подобрать фильм, сериал или программу на вечер.\n\n📖 Нажимай на определенную кнопку "Поиск фильма" или "Поиск сериала/программы", также можно в ручную написать команду поиска и я смогу подобрать фильм/сериал/программу.\n\n💬 "Поиск фильма" - команда поиска фильма\n\n💬 "Поиск сериала/программы" - команда поиска ТВ шоу/сериала`;
-  ctx.reply(message);
-});
-
-bot.on('text', async (ctx) => {
-  const { text } = ctx.message;
-  const textCapitalize = text.charAt(0).toUpperCase() + text.slice(1);
-  const months = [
-    'Января',
-    'Февраля',
-    'Марта',
-    'Апреля',
-    'Мая',
-    'Июня',
-    'Июля',
-    'Августа',
-    'Сентября',
-    'Октября',
-    'Ноября',
-    'Декабря',
-  ];
-
-  const pageId = Math.floor(Math.random() * 500) + 1;
-  const movieId = Math.floor(Math.random() * 20) + 1;
-
-  let data = {};
-  let trailer = '';
-
-  if (textCapitalize === 'Помощь') {
-    console.log(
-      `------------>>> User ${ctx.message.from.first_name} need help!`
-    );
-
-    const message = `🤖 Я умный бот который поможет тебе подобрать фильм, сериал или программу на вечер.\n\n📖 Нажимай на определенную кнопку "Поиск фильма" или "Поиск сериала/программы", также можно в ручную написать команду поиска и я смогу подобрать фильм/сериал/программу.\n\n💬 "Поиск фильма" - команда поиска фильма\n\n💬 "Поиск сериала/программы" - команда поиска ТВ шоу\n\n💬 "Поиск сериала" - команда поиска ТВ шоу(равнозначна команде "Поиск сериала/программы")\n\n💬 /help - помощь работы с Ботом`;
-    ctx.reply(message);
+  if (query.data === 'movie-genre') {
+    bot.sendMessage(chatId, 'Выбери жанр ', {
+      reply_markup: {
+        inline_keyboard: keyboardGenres,
+      },
+    })
   }
-  if (textCapitalize === 'Привет') {
-    ctx.replyWithAnimation(
-      'https://tlgrm.ru/_/stickers/d06/e20/d06e2057-5c13-324d-b94f-9b5a0e64f2da/11.webp'
-    );
-    if (ctx.message.from?.last_name) {
-      const message = `👋 Привет, ${ctx.message.from.first_name} ${ctx.message.from.last_name}! Чтобы начать поиск фильма напиши "поиск фильма" или нажимай на определенную кнопку.`;
-      ctx.reply(message);
-    } else {
-      const message = `👋 Привет, ${ctx.message.from.first_name}! Чтобы начать поиск фильма напиши "поиск фильма" или нажимай на определенную кнопку.`;
-      ctx.reply(message);
+  if (query.data === 'movie-list') {
+    bot.sendMessage(chatId, 'Выбери список', {
+      reply_markup: {
+        inline_keyboard: keyboardLists,
+      },
+    })
+  }
+  if (query.data === 'randomAll') {
+    let pageNum = Math.floor(Math.random() * (20 - 1) + 1)
+    let id = Math.floor(Math.random() * (20 - 1) + 1)
+    let films = await findRandom(pageNum)
+    let film = films[id]
+    let genres = ''
+    for (const genre of film.genres) {
+      genres += genre.genre + ' '
     }
-  }
-  if (textCapitalize === 'Hi') {
-    if (ctx.message.from?.last_name) {
-      const message = `👋 Hi, ${ctx.message.from.first_name} ${ctx.message.from?.last_name}! Чтобы начать поиск фильма напиши "поиск фильма" или нажимай на определенную кнопку.`;
-      ctx.reply(message);
-    } else {
-      const message = `👋 Hi, ${ctx.message.from.first_name}! Чтобы начать поиск фильма напиши "поиск фильма" или нажимай на определенную кнопку.`;
-      ctx.reply(message);
-    }
+    await bot.sendPhoto(chatId, film.posterUrlPreview, {
+      caption: `${
+        film.nameRu
+          ? film.nameRu
+          : film.nameOriginal
+          ? film.nameOriginal
+          : 'ololo'
+      }
+    Рейтинг:${film.rating}
+    Жанры: ${genres}
+        `,
+      reply_markup: {
+        inline_keyboard: keyboard,
+      },
+    })
   }
   if (
-    textCapitalize !== 'Помощь' &&
-    textCapitalize !== 'Поиск сериала/программы' &&
-    textCapitalize !== 'Поиск фильма' &&
-    textCapitalize !== 'Привет' &&
-    textCapitalize !== 'Hi'
+    query.data === 'TOP_250_BEST_FILMS' ||
+    query.data === 'TOP_100_POPULAR_FILMS' ||
+    query.data === 'TOP_AWAIT_FILMS'
   ) {
-    ctx.reply(`Я тебя не понимаю, попробуйте обратиться в /help .`);
+    let list = query.data
+    top250PageCounter = 1
+    top250Counter = 1
+    await getList(query, list, top250PageCounter).then(() => {
+      bot.sendMessage(chatId, 'Выберите действие:', {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: 'Далее',
+                callback_data: `${list}/next`,
+              },
+            ],
+            [
+              {
+                text: 'В начало',
+                callback_data: `begining`,
+              },
+            ],
+          ],
+        },
+      })
+    })
   }
-  if (textCapitalize === 'Поиск фильма') {
-    console.log(
-      `------------>>> User ${ctx.message.from.first_name} start looking movie!`
-    );
-
-    try {
-      const id = await tmdb.getMovieId(process.env.TMDB_API, pageId, movieId);
-      const movie = await tmdb.getDescription(process.env.TMDB_API, id);
-
-      const {
-        title,
-        release_date,
-        overview,
-        original_title,
-        genres,
-        poster_path,
-        vote_average,
-      } = movie;
-
-      const newGenres = genres
-        .map((genre) => {
-          return genre.name;
+  if (
+    query.data === 'TOP_250_BEST_FILMS/next' ||
+    query.data === 'TOP_100_POPULAR_FILMS/next' ||
+    query.data === 'TOP_AWAIT_FILMS/next'
+  ) {
+    let arr = query.data.split('/')
+    let list = arr[0]
+    top250PageCounter++
+    await getList(query, list, top250PageCounter).then((result) => {
+      if (!result) {
+        bot.sendMessage(chatId, 'Выберите действие:', {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: 'Далее',
+                  callback_data: `${list}/next`,
+                },
+              ],
+              [
+                {
+                  text: 'В начало',
+                  callback_data: `begining`,
+                },
+              ],
+            ],
+          },
         })
-        .join(', ');
-
-      const poster = `https://www.themoviedb.org/t/p/w600_and_h900_bestv2${poster_path}`;
-
-      const releaseDate = release_date.split('-');
-      const day = releaseDate[2];
-      const month = months[parseInt(releaseDate[1] - 1)];
-      const year = releaseDate[0];
-
-      try {
-        trailer = await movieTrailer.getTrailer(original_title);
-      } catch (error) {
-        trailer = 'Трейлер к фильму не найден!';
-        console.log(error);
-      }
-
-      data = {
-        poster,
-        title,
-        original_title: original_title
-          ? original_title
-          : 'Оригинальное название не найдено',
-        overview: overview ? overview : 'Описание фильма не найдено',
-        newGenres: newGenres ? newGenres : 'Жарны к фильму не определены',
-        release: `${day} ${month} ${year}`,
-        trailer: trailer ? trailer : 'Трейлер не найден',
-        vote_average: vote_average ? vote_average : 'Рейтинг не найден',
-      };
-
-      if (trailer === 'Трейлер к фильму не найден!') {
-        ctx.replyWithPhoto(poster);
-      }
-      if (trailer) {
-        const random = `🎬 Название: ${data.title}\n\n💡 Описание фильма: ${data.overview}\n\n 👀 Рейтинг TMDB: ${data.vote_average}\n\n 🎞 Оригинальное название: ${data.original_title}\n\n✅ Жанр: ${data.newGenres}\n\n🗓 Дата релиза: ${data.release}\n\n📺 Трейлер: ${data.trailer}`;
-        ctx.reply(random);
       } else {
-        const random = `🎬 Название: ${data.title}\n\n💡 Описание фильма: ${data.overview}\n\n 👀 Рейтинг TMDB: ${data.vote_average}\n\n 🎞 Оригинальное название: ${data.original_title}\n\n✅ Жанр: ${data.newGenres}\n\n🗓 Дата релиза: ${data.release}\n\n🖼 Постер: ${data.poster}`;
-        ctx.reply(random);
-      }
-    } catch (error) {
-      ctx.reply('Мы не смогли подобрать фильм! Попробуйте еще раз!');
-      console.log(error);
-    }
-  }
-  if (textCapitalize === 'Поиск сериала/программы') {
-    console.log(
-      `------------>>> User ${ctx.message.from.first_name} start looking tv shows!`
-    );
-
-    try {
-      const id = await tmdb.getTvId(process.env.TMDB_API, pageId, movieId);
-      const tvShow = await tmdb.getTvDescription(process.env.TMDB_API, id);
-
-      const {
-        name,
-        overview,
-        poster_path,
-        genres,
-        original_name,
-        first_air_date,
-        last_air_date,
-        vote_average,
-      } = tvShow;
-
-      const tvGenres = genres
-        .map((genre) => {
-          return genre.name;
+        bot.sendMessage(chatId, 'Список закончился', {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: 'В начало',
+                  callback_data: `begining`,
+                },
+              ],
+            ],
+          },
         })
-        .join(', ');
-
-      const poster = `https://www.themoviedb.org/t/p/w600_and_h900_bestv2${poster_path}`;
-
-      const firstAirDate = first_air_date.split('-');
-      const airYear = firstAirDate[0];
-      const airMonth = months[parseInt(firstAirDate[1] - 1)];
-      const airDay = firstAirDate[2];
-
-      const lastAirDate = last_air_date.split('-');
-      const lastYear = lastAirDate[0];
-      const lastMonth = months[parseInt(lastAirDate[1] - 1)];
-      const lastDay = lastAirDate[2];
-
-      try {
-        trailer = await movieTrailer.getTrailer(original_name);
-      } catch (error) {
-        trailer = 'Трейлер к сериалу/программе не найден!';
-        console.log(error);
       }
-
-      data = {
-        poster,
-        name,
-        original_name: original_name
-          ? original_name
-          : 'Оригинальное название сериала/программы не найдено',
-        overview: overview ? overview : 'Описание сериала/программы не найдено',
-        tvGenres: tvGenres
-          ? tvGenres
-          : 'Жарны к сериалу/программе не определены',
-        airDate:
-          first_air_date !== ''
-            ? `${airDay} ${airMonth} ${airYear}`
-            : 'Дата начала сериала/программы не найдено!',
-        lastDate:
-          last_air_date !== ''
-            ? `${lastDay} ${lastMonth} ${lastYear}`
-            : 'Дата окончания сериала/программы не найдно! Возможно проект еще работает!',
-        trailer: trailer ? trailer : 'Трейлер не найден(',
-        vote_average: vote_average ? vote_average : 'Рейтинг не найден(',
-      };
-
-      if (trailer === 'Трейлер к сериалу/программе не найден!') {
-        ctx.replyWithPhoto(poster);
-      }
-      if (trailer) {
-        const random = `🎬 Название: ${data.name}\n\n💡 Описание сериала/программы: ${data.overview}\n\n👀 Рейтинг TMDB: ${data.vote_average}\n\n🎞 Оригинальное название: ${data.original_name}\n\n✅ Жанр: ${data.tvGenres}\n\n🗓 Дата релиза: ${data.airDate}\n\n🗓 Дата окончания: ${data.lastDate}\n\n📺 Трейлер: ${data.trailer}`;
-        ctx.reply(random);
-      } else {
-        const random = `🎬 Название: ${data.name}\n\n💡 Описание сериала/программы: ${data.overview}\n\n👀 Рейтинг TMDB: ${data.vote_average}\n\n🎞 Оригинальное название: ${data.original_name}\n\n✅ Жанр: ${data.tvGenres}\n\n🗓 Дата релиза: ${data.airDate}\n\n🗓 Дата окончания: ${data.lastDate}\n\n🖼 Постер: ${data.poster}`;
-        ctx.reply(random);
-      }
-    } catch (error) {
-      ctx.reply('Мы не смогли подобрать сериал! Попробуйте еще раз!');
-      console.log(error);
-    }
+      topfilms
+    })
   }
-});
 
-bot.launch();
+  if (genresArr[1].includes(Number(query.data))) {
+    top250PageCounter = 1
+    top250Counter = 1
+    bot.sendMessage(chatId, 'выбери год', {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: '1980-1990',
+              callback_data: `showGenreFilms/${query.data}/1980/1990`,
+            },
+          ],
+          [
+            {
+              text: '1990-2000',
+              callback_data: `showGenreFilms/${query.data}/1990/2000`,
+            },
+          ],
+          [
+            {
+              text: '2000-2010',
+              callback_data: `showGenreFilms/${query.data}/2000/2010`,
+            },
+          ],
+          [
+            {
+              text: '2010-2021',
+              callback_data: `showGenreFilms/${query.data}/2010/2021`,
+            },
+          ],
+          [
+            {
+              text: 'Любой',
+              callback_data: `showGenreFilms/${query.data}/1880/2021`,
+            },
+          ],
+        ],
+      },
+    })
+  }
+
+  if (query.data.indexOf('showGenreFilms') === 0) {
+    let arr = query.data.split('/')
+    await showByGenre(query, arr[1], arr[2], arr[3], top250PageCounter).then(
+      (result) => {
+        if (!result) {
+          top250PageCounter++
+          bot.sendMessage(chatId, 'Выберите действие:', {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: 'Далее',
+                    callback_data: query.data,
+                  },
+                ],
+                [
+                  {
+                    text: 'В начало',
+                    callback_data: `begining`,
+                  },
+                ],
+              ],
+            },
+          })
+        } else {
+          bot.sendMessage(chatId, 'Список закончился', {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: 'В начало',
+                    callback_data: `begining`,
+                  },
+                ],
+              ],
+            },
+          })
+        }
+      }
+    )
+  }
+})
+
+async function getList(query, list, page) {
+  const chatId = query.message.chat.id
+  const topfilms = await findLists(list, page)
+  if (topfilms.length > 0) {
+    for (let i = 0; i < topfilms.length; i++) {
+      let genres = ''
+      for (const genre of topfilms[i].genres) {
+        genres += genre.genre + ' '
+      }
+      await bot.sendPhoto(chatId, topfilms[i].posterUrlPreview, {
+        caption: `${top250Counter}. ${topfilms[i].nameRu}
+Рейтинг:${topfilms[i].rating}
+Жанры: ${genres}
+    `,
+        disable_notification: true,
+      })
+      top250Counter++
+    }
+  } else {
+    const data = '404'
+    return data
+  }
+}
+
+async function showByGenre(query, genreId, yearStart, yearEnd, pageNum) {
+  const chatId = query.message.chat.id
+  const genrefilms = await findByGenres(genreId, yearStart, yearEnd, pageNum)
+  if (genrefilms.length > 0) {
+    for (let i = 0; i < genrefilms.length; i++) {
+      let genres = ''
+      for (const genre of genrefilms[i].genres) {
+        genres += genre.genre + ' '
+      }
+      await bot.sendPhoto(chatId, genrefilms[i].posterUrlPreview, {
+        caption: `${top250Counter}. ${genrefilms[i].nameRu}
+Рейтинг:${genrefilms[i].rating}
+Жанры: ${genres}
+    `,
+        disable_notification: true,
+      })
+      top250Counter++
+    }
+  } else {
+    const data = '404'
+    return data
+  }
+}
