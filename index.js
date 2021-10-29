@@ -296,7 +296,7 @@ async function getList(query, list, page) {
     for (let i = 0; i < topfilms.length; i++) {
       let genres = ''
       for (const genre of topfilms[i].genres) {
-        genres += genre.genre + ' '
+        genres += genre.genre + ', '
       }
       await bot.sendPhoto(chatId, topfilms[i].posterUrlPreview, {
         caption: `${top250Counter}. ${topfilms[i].nameRu}
