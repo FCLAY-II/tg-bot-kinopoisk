@@ -112,7 +112,7 @@ bot.on('callback_query', async (query) => {
     let film = films[id]
     let genres = ''
     for (const genre of film.genres) {
-      genres += genre.genre + ' '
+      genres += genre.genre + ', '
     }
     await bot.sendPhoto(chatId, film.posterUrlPreview, {
       caption: `${
