@@ -320,7 +320,7 @@ async function showByGenre(query, genreId, yearStart, yearEnd, pageNum) {
     for (let i = 0; i < genrefilms.length; i++) {
       let genres = ''
       for (const genre of genrefilms[i].genres) {
-        genres += genre.genre + ' '
+        genres += genre.genre + ', '
       }
       await bot.sendPhoto(chatId, genrefilms[i].posterUrlPreview, {
         caption: `${top250Counter}. ${genrefilms[i].nameRu}
