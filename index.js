@@ -37,7 +37,8 @@ const chatIdArr = []
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id
   chatIdArr.push(chatId)
-  await bot.sendMessage(msg.chat.id, 'Привет, друг!')
+  await bot.sendMessage(msg.chat.id, `Привет, ${msg.chat.first_name}!`)
+  console.log(msg.chat)
   await bot.sendMessage(
     msg.chat.id,
     'Снова ищешь что посмотреть? Давай начнем!'
@@ -299,7 +300,7 @@ async function getList(query, list, page) {
       }
       await bot.sendPhoto(chatId, topfilms[i].posterUrlPreview, {
         caption: `${top250Counter}. ${topfilms[i].nameRu}
-Рейтинг:${topfilms[i].rating}
+Рейтинг: ${topfilms[i].rating}
 Жанры: ${genres}
     `,
         disable_notification: true,
@@ -323,7 +324,7 @@ async function showByGenre(query, genreId, yearStart, yearEnd, pageNum) {
       }
       await bot.sendPhoto(chatId, genrefilms[i].posterUrlPreview, {
         caption: `${top250Counter}. ${genrefilms[i].nameRu}
-Рейтинг:${genrefilms[i].rating}
+Рейтинг: ${genrefilms[i].rating}
 Жанры: ${genres}
     `,
         disable_notification: true,
