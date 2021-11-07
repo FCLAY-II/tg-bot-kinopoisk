@@ -1,4 +1,4 @@
-const axios = require('axios')
+const axios = require('axios');
 
 async function findGenres() {
   const response = await axios(
@@ -8,11 +8,11 @@ async function findGenres() {
         'X-API-KEY': 'c11b5c8f-1e5f-4e69-985b-3dc1a54673aa',
       },
     }
-  )
-  const genresIdArr = response.data.genres
-  const genresArr = genresIdArr.map((el) => el.genre)
-  const idArr = genresIdArr.map((el) => el.id)
-  return [genresArr, idArr]
+  );
+  const genresIdArr = response.data.genres;
+  const genresArr = genresIdArr.map((el) => el.genre);
+  const idArr = genresIdArr.map((el) => el.id);
+  return [genresArr, idArr];
 }
 
 async function findLists(list, pageNum) {
@@ -23,9 +23,9 @@ async function findLists(list, pageNum) {
         'X-API-KEY': 'c11b5c8f-1e5f-4e69-985b-3dc1a54673aa',
       },
     }
-  )
+  );
 
-  return response.data.films
+  return response.data.films;
 }
 
 async function findByGenres(
@@ -41,8 +41,8 @@ async function findByGenres(
         'X-API-KEY': 'c11b5c8f-1e5f-4e69-985b-3dc1a54673aa',
       },
     }
-  )
-  return response.data.films
+  );
+  return response.data.films;
 }
 
 async function findById(id) {
@@ -53,8 +53,8 @@ async function findById(id) {
         'X-API-KEY': 'c11b5c8f-1e5f-4e69-985b-3dc1a54673aa',
       },
     }
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 async function findRandom(pageNum) {
@@ -65,7 +65,7 @@ async function findRandom(pageNum) {
         'X-API-KEY': 'c11b5c8f-1e5f-4e69-985b-3dc1a54673aa',
       },
     }
-  )
-  return response.data.films
+  );
+  return response.data.films;
 }
-module.exports = { findGenres, findLists, findByGenres, findById, findRandom }
+module.exports = { findGenres, findLists, findByGenres, findById, findRandom };
