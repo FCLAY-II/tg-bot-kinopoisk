@@ -2,7 +2,7 @@
 
 Телеграм бот позволяет выбирать фильмы. Рандомный фильм/списки по жанрам/списки по годам и десятилетиям. Я реализовал работу с сторонней API и прописал всю логику внутри телеграм бота. Данного бота можно найти в телеграме(@kinoMoodBot).
 ### Функциональность бота:
-<img width="660" alt="2021-10-09 (1)" src="https://github.com/FCLAY-II/tg-bot-kinopoisk/blob/master/public/img/IMG_4729.gif">
+<img width="460" alt="2021-10-09 (1)" src="https://github.com/FCLAY-II/tg-bot-kinopoisk/blob/master/public/img/IMG_4729.gif">
 
 ### Скриншоты: 
 Приветствие пользователя
